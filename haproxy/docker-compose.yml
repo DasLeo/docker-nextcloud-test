@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  loadbalancer:
+    #image: haproxy:2.0
+    build: ./config
+    restart: always
+    hostname: haproxy
+    container_name: haproxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      #- haproxy-config:/usr/local/etc/haproxy
+      - letsencrypt:/usr/local/etc/haproxy/certs
+    networks:
+      - haproxy-net
+volumes:
+  #haproxy-config:
+  #  external: true
+  letsencrypt:
+    external: true
+networks:
+  haproxy-net:
+    external: true

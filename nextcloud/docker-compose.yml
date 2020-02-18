@@ -1,0 +1,62 @@
+version: '3'
+
+volumes:
+  nextcloud:
+  db:
+  web:
+
+networks:
+  haproxy-net:
+    external: true
+
+services:
+  db:
+    image: mariadb
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    restart: always
+    volumes:
+      - db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=r00tP@ssw0rd
+      - MYSQL_PASSWORD=n3xtcloudP@ssw0rd
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+
+  app:
+    image: nextcloud:15.0.14-fpm
+    depends_on:
+      - db
+      - cache
+    volumes:
+      - nextcloud:/var/www/html
+    restart: always
+    environment:
+      - MYSQL_PASSWORD=n3xtcloudP@ssw0rd
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_HOST=db
+      # Varaible is not working, only first entry is saved to config.php
+      # Using occ instead now:
+      #  docker exec --user www-data cloudcontosocom_app_1 php occ config:system:set trusted_domains 1 --value=cloud.contoso.com
+      #  docker exec --user www-data cloudcontosocom_app_1 php occ config:system:set trusted_domains 2 --value=owncloud.contoso.com
+      #  docker exec --user www-data cloudcontosocom_app_1 php occ config:system:set trusted_domains 3 --value=foocloud.contoso.com
+      #- "NEXTCLOUD_TRUSTED_DOMAINS=cloud.contoso.com owncloud.contoso.com foocloud.contoso.com
+      - REDIS_HOST=cache
+
+  cache:
+    image: redis:5
+    restart: always
+
+  nextcloud-web:
+    build: ./web
+    #image: nginx
+    depends_on:
+      - app
+    volumes:
+      #- web:/etc/nginx:ro
+      - nextcloud:/var/www/html:ro
+    restart: always
+    networks:
+      - haproxy-net
+      - default
+
