@@ -49,11 +49,9 @@ services:
 
   nextcloud-web:
     build: ./web
-    #image: nginx
     depends_on:
       - app
     volumes:
-      #- web:/etc/nginx:ro
       - nextcloud:/var/www/html:ro
     restart: always
     networks:
